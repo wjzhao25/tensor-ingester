@@ -2,7 +2,7 @@
   "name": "tensor-ingester-scaffold",
   "packageManager": "yarn@3.3.1",
   "scripts": {
-    "run": "ts-node ingester.ts"
+    "ingest": "ts-node ingester.ts"
   },
   "dependencies": {
     "@solana/web3.js": "^1.73.2",

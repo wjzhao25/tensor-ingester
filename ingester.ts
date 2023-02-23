@@ -6,7 +6,10 @@ require('dotenv').config();
   console.log('Ingester reporting to duty 🫡')
 
   const rpc = process.env.RPC_PROVIDER;
-  if (!rpc) return;
+  if (!rpc) {
+    console.log('Ooof missing RPC. Did you add one to .env?')
+    return
+  };
 
   const connection = new Connection(rpc);
   const marketplaceAddress = new PublicKey("M2mx93ekt1fmXSVkTrUL9xVFHkmME8HTUi5Cyc5aF7K");
