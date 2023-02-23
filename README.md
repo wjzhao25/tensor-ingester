@@ -1,13 +1,23 @@
 # tensor-ingester-scaffold
 
-Follow the instructions in Tensor's shared task description to complete the exercise.
+## Setup
 
-Install
+1. Install
 ```
 yarn
 ```
 
-Run
+2. Add RPC provider into .env
 ```
-yarn ingester
+#.env
+RPC_PROVIDER=http://.....
 ```
+
+3. Run
+```
+yarn ingest
+```
+
+## Exercise
+
+Follow the instructions in Tensor's shared task description to complete the exercise.
