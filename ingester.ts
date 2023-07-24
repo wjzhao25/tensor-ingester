@@ -26,13 +26,13 @@ export enum Mode {
       type: "string",
       default: "TSWAPaqyCSx2KABk68Shruf4rp7CxcNi8hAsbdwmHbN"
     })
-    .option("siFetchSize", {
+    .option("sigFetchSize", {
       alias: "sf",
       describe: "# of sigs to fetch at a time (max 1000)",
       type: "number",
       default: 1000,
     })
-        .option("sigWriteSize", {
+    .option("sigWriteSize", {
       alias: "sw",
       describe: "# of sigs to write at a time (max 50)",
       type: "number",
