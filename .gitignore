@@ -11,3 +11,6 @@
 #.pnp.*
 
 .idea/
+node_modules/
+.env
+yarn.lock
