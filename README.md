@@ -92,3 +92,7 @@ yarn ingest --m Standard --jobId 97a0b73d-edba-432b-97be-8239d1d30d71
 
 - `-id`, `--jobId`: Job id used to resume prior job.
 - `-r`, `--retries`: Number of retries allowed against **[getSignaturesForAddress](https://docs.solana.com/api/http#getsignaturesforaddress)** if result is empty.
+
+# tensor-ingester Part B
+
+Given that in part A we used pagination when requesting getSignaturesForAddress for both history and standard mode, only the pages need to be held in memory and can be disgarded after writing to file. Given the sigs no longer have to be written to file, we no longer need keep all sigs during get the gap mode in memory in order to reverse them and can directly write them to memory

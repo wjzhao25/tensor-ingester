@@ -170,8 +170,6 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
   ){
     console.log(`Getting the gap between ${fromSignature} and ${toSignature}`)
     let currentSignature = fromSignature
-    //init gap array for sigs
-    let gapSigs: ConfirmedSignatureInfo[] = []
     //retry counter
     let retry = allowedRetries
     //create while loop to fetch until toSignature is reached
@@ -192,7 +190,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
         console.error(`Reached the end of the sigs without encoutering ${toSignature}`)
         break
       }else{
-        retry = allowedRetries;
+        retry = allowedRetries
       }
   
       //check if sigs contain toSignature 
@@ -201,17 +199,17 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
         console.log(`Found ${toSignature} closing gap.`)
         //add all sigs with greater blocktime than toSignature to gapSigs
         sigs = sigs.filter(s => s.blockTime! > sigs[toSigIndex].blockTime!)
-        signatureFound = true;
+        signatureFound = true
       }
       sigs = cleanSigs(sigs)
-      gapSigs.push(...sigs)
-
+      sigs = sigs.reverse()
+      append = writer.writeToFile(filename, sigs, sigWriteSize, append)
       //update currentSignature
       currentSignature = sigs[sigs.length - 1].signature!
     }
   
-    gapSigs = gapSigs.reverse();
-    return writer.writeToFile(filename, gapSigs, sigWriteSize, append)
+    
+    return append
   }
   
   export async function standardIngester(
