@@ -1,25 +1,13 @@
 
 import {Connection, PublicKey, ConfirmedSignatureInfo, SignaturesForAddressOptions} from '@solana/web3.js';
 import {DataWriter} from './data-writer'
+import {ProviderUtil, checkSigsInOrder} from './providers'
 
 export enum Mode {
     History = "History",
     Standard = "Standard",
   }
 
-function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
-    for (let i = 1; i < sigs.length; i++) {
-      const prevItem = sigs[i - 1]
-      const currentItem = sigs[i]
-      const comparisonResult = prevItem.blockTime! - currentItem.blockTime!
-  
-      if (comparisonResult < 0) {
-        return false
-      }
-    }
-    return true
-  }
-  
   function reorder(sigs: ConfirmedSignatureInfo[]): ConfirmedSignatureInfo[] {
     //check if last blocktime is outlier
     
@@ -48,7 +36,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
     const uniqueSigs = sigs.filter((s, index, self) => index === self.findIndex((t) => (t.signature === s.signature && t.blockTime === s.blockTime)))
     console.log(`Unique ${uniqueSigs.length} sigs.`)
     //check if sigs are in order
-    if(checkSigsInOrdered(uniqueSigs)){
+    if(checkSigsInOrder(uniqueSigs)){
       console.log('Sigs are in order.')
       return uniqueSigs;
     }
@@ -58,7 +46,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
   }
   
   export async function historyIngester(
-    connection: Connection,
+    rpcs: Connection[],
     marketplaceAddress: PublicKey, 
     writer: DataWriter,
     fromSignature: string,
@@ -83,7 +71,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
       toTimestamp = 0;
     }
     await backfillSigIngester(
-      connection, 
+      rpcs, 
       marketplaceAddress, 
       writer,
       fromSignature!, 
@@ -96,7 +84,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
    }
 
   async function backfillSigIngester(
-      connection: Connection,
+      rpcs: Connection[],
       marketplaceAddress: PublicKey, 
       writer: DataWriter,
       fromSignature: string,
@@ -107,7 +95,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
       append: boolean,
       allowedRetries: number,
      ) {
-    
+      const providerUtil = new ProviderUtil(rpcs, marketplaceAddress)
       //retry counter
       let retry = allowedRetries
   
@@ -117,7 +105,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
       while(!reachedEnd) {
   
         //fetch sigs using write size as limit since not in real time
-        let sigs = await connection.getSignaturesForAddress(marketplaceAddress, {before: currentSignature, limit: sigReadSize}) 
+        let sigs = await providerUtil.getConfirmedSignaturesForAddress({before: currentSignature, limit: sigReadSize}) 
         console.log(`Fetched ${sigs.length} sigs.`)
         
         //check if sigs is empty
@@ -157,8 +145,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
   }
   
   async function getTheGap(
-    connection: Connection,
-    marketplaceAddress: PublicKey,
+    provider: ProviderUtil,
     writer: DataWriter, 
     sigReadSize: number,
     sigWriteSize: number,
@@ -178,7 +165,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
     let signatureFound = false
     while(!signatureFound){
       //fetch sigs using write size as limit since not in real time
-      let sigs = await connection.getSignaturesForAddress(marketplaceAddress, {before: currentSignature, limit: sigReadSize}) 
+      let sigs = await provider.getConfirmedSignaturesForAddress({before: currentSignature, limit: sigReadSize}) 
       console.log(`Fetched ${sigs.length} sigs.`)
       
       //check if sigs is empty
@@ -215,7 +202,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
   }
   
   export async function standardIngester(
-    connection: Connection,
+    rpcs: Connection[],
     marketplaceAddress: PublicKey, 
     writer: DataWriter, 
     sigReadSize: number,
@@ -235,7 +222,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
       }
     }
     await realTimeSigIngester(
-      connection, 
+      rpcs, 
       marketplaceAddress, 
       writer,
       sigReadSize, 
@@ -249,7 +236,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
    }
 
   async function realTimeSigIngester(
-    connection: Connection,
+    rpcs: Connection[],
     marketplaceAddress: PublicKey, 
     writer: DataWriter,
     sigReadSize: number,
@@ -263,7 +250,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
    ) {
   
     let currentSignature = fromSignature;
-  
+    const providerUtil = new ProviderUtil(rpcs, marketplaceAddress)
     //create while loop to fetch until toTimestamp is reached
     while(true) {
       console.log(`Current signature ${currentSignature}`)
@@ -273,7 +260,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
       if(currentSignature !== undefined){
         options.until = currentSignature;
       }
-      let sigs = await connection.getSignaturesForAddress(marketplaceAddress, options)
+      let sigs = await providerUtil.getConfirmedSignaturesForAddress(options)
       console.log(`Fetched ${sigs.length} sigs.`)
       
       //check if sigs is empty
@@ -296,7 +283,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
           //get last sig in sigs
           const lastSig = sigs[sigs.length - 1].signature!
           //get the gap between cursorSignature and lastSig
-          append = await getTheGap(connection, marketplaceAddress, writer, sigReadSize, sigWriteSize, filename, append, allowedRetries, lastSig, cursorSignature)
+          append = await getTheGap(providerUtil, writer, sigReadSize, sigWriteSize, filename, append, allowedRetries, lastSig, cursorSignature)
         }
       }
 

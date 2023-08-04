@@ -92,3 +92,62 @@ yarn ingest --m Standard --jobId 97a0b73d-edba-432b-97be-8239d1d30d71
 
 - `-id`, `--jobId`: Job id used to resume prior job.
 - `-r`, `--retries`: Number of retries allowed against **[getSignaturesForAddress](https://docs.solana.com/api/http#getsignaturesforaddress)** if result is empty.
+
+# tensor-ingester Part C
+
+Given that we have multiple providers and our algorithm is trying to get some guarantees on worst case amount of missed sigs, 
+in the sense that if our best performing provider makes 10 mistakes out of 1000 sigs what is the most amount of mistakes the algorithm will make in relation to the best performer.
+
+We can use elements of the **[weighted majority algorithm](https://en.wikipedia.org/wiki/Multiplicative_weight_update_method)**
+to solve this problem. If we consider our providers as the experts and the decision problem as which sig to include in response position X, then depending on weight of the provider each will cast a weighted vote for the sig they received at their position and the sig with the highest vote will be selected. This will ensure that the votes of providers with the least amount of mistakes will be weighted higher.
+
+ie.
+```
+provider1 weight 1
+fetched sigs A B C 
+provider2 weight 0.2
+fetched sigs A B D 
+provider3 weight 0.2
+fetched sigs A B D
+
+Votes
+    Position 1
+        sig A with 3 votes
+    Position 2
+        sig B with 3 votes
+    Position 3
+        sig C with 1 votes
+        sig D with 0.4 votes
+
+Result
+sigs A B C
+```
+
+Given that we don't know what the correct sequence of sigs are, we define mistakes as responses that are incorrect is terms of 1. being out of order
+2. cursor does exist in peek ahead
+    We perform a peek ahead where we make a second request with limit + 10 to see if last sig that we use a cursor is not incorrect. If the cursor is in the peek ahead and the peek ahead is in order then we consider the cursor as correct
+
+If a provider makes a mistake we divide their weight in half, with all weights starting at 1
+## Configure providers
+To configure multiple providers, add url in comma separate list
+ie.
+```
+RPC_PROVIDER=https://solana-mainnet.g.alchemy.com/v2/K9Ju48OokMWsUlDkltR2wmjJw0om2Gbo,https://solana-mainnet.g.alchemy.com/v2/qgtRGNeen3TTGf_cLb2Y3Mi51H9jr9mK
+```
+
+## Usage
+**note** read limit set to 990 due to peek ahead
+
+Run 
+```
+yarn ingest --m Standard
+```
+
+Resume job 97a0b73d-edba-432b-97be-8239d1d30d71 
+```
+yarn ingest --m Standard --jobId 97a0b73d-edba-432b-97be-8239d1d30d71 
+```
+### Options
+
+- `-id`, `--jobId`: Job id used to resume prior job.
+- `-r`, `--retries`: Number of retries allowed against **[getSignaturesForAddress](https://docs.solana.com/api/http#getsignaturesforaddress)** if result is empty.

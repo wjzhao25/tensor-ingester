@@ -1,4 +1,4 @@
-import {Connection, PublicKey} from '@solana/web3.js';
+import {Connection,PublicKey} from '@solana/web3.js';
 import yargs from "yargs";
 import {hideBin} from "yargs/helpers";
 import {historyIngester, standardIngester} from './src/ingester';
@@ -38,7 +38,7 @@ require('dotenv').config();
       alias: "sf",
       describe: "# of sigs to fetch at a time (max 1000)",
       type: "number",
-      default: 1000,
+      default: 990,
     })
     .option("sigWriteSize", {
       alias: "sw",
@@ -61,20 +61,19 @@ require('dotenv').config();
 
   console.log('Ingester reporting to duty 🫡')
 
-  const rpc = process.env.RPC_PROVIDER;
-  if (!rpc) {
+  const rpcs = process.env.RPC_PROVIDER!.split(',').map(rpc => new Connection(rpc, 'confirmed'))
+  if (!rpcs) {
     console.log('Ooof missing RPC. Did you add one to .env?')
     return
-  };
+  }
 
-  const connection = new Connection(rpc);
-  const marketplaceAddress = new PublicKey(args.marketplace);
+  const marketplaceAddress = new PublicKey(args.marketplace)
 
   //boolean to check if new job
-  let newJob = false;
+  let newJob = false
   //if jobId is empty create a new UUID
   if(args.jobId === undefined) {
-    args.jobId = uuidv4();
+    args.jobId = uuidv4()
     console.log(`Starting a new job with id ${args.jobId}.`)
     newJob = true;
   }else{
@@ -86,7 +85,7 @@ require('dotenv').config();
   //if mode is history, call backfillSigIngester from lastSig to toTimestamp
   if(args.mode === Mode.History) {
     await historyIngester(
-      connection, 
+      rpcs, 
       marketplaceAddress, 
       write,
       args.from!, 
@@ -98,7 +97,7 @@ require('dotenv').config();
       args.retries)
   }else if(args.mode === Mode.Standard){
     await standardIngester(
-      connection, 
+      rpcs, 
       marketplaceAddress, 
       write,
       args.sigFetchSize, 
