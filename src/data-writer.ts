@@ -7,11 +7,26 @@ export abstract class DataWriter{
     sigs: ConfirmedSignatureInfo[],
     sigWriteSize: number,
     append: boolean,
-  ): boolean;
+  ): boolean
 
   abstract readNthLastSig(
     filename: string,
     n?: number,
-  ): string | undefined ;
+  ): string | undefined 
+
+  abstract writeTxnLog(
+    filename: string,
+    bytes: number
+  ): void 
+
+  abstract readTxnLog(
+    filename: string
+  ): number | undefined 
+
+  abstract truncate(
+    filename: string,
+    targetSize : number,
+  ): void
+
 }
 

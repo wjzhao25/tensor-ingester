@@ -1,4 +1,4 @@
-import {readFileSync,appendFileSync,existsSync} from "fs"
+import {readFileSync,appendFileSync,existsSync,truncate,writeFile,stat} from "fs"
 import {ConfirmedSignatureInfo} from '@solana/web3.js'
 import {DataWriter} from './data-writer'
 
@@ -19,6 +19,13 @@ export class CsvWriter extends DataWriter{
         sigs = sigs.slice(sigWriteSize)
         append = true
     }
+    stat(filename, (err, stats) => {
+      if (err) {
+        console.error('Error getting file stats:', err)
+      } else {
+        this.writeTxnLog(filename, stats.size)
+      }
+    });
     return append
   }
     
@@ -46,6 +53,42 @@ export class CsvWriter extends DataWriter{
     const lastEntry = entrieList[entrieList.length - offset]
     const lastSig = lastEntry.split(':')[1]
     return lastSig
+  }
+
+  writeTxnLog(
+    filename: string,
+    bytes: number
+  ){
+    writeFile(`txn-log-${filename}`, `${bytes}`, (err) => {
+      if (err) {
+        console.error('Error writing to the file:', err);
+      } 
+    })
+  }
+
+  readTxnLog(
+    filename: string
+  ): number | undefined {
+    if (!existsSync(`txn-log-${filename}`)) {
+      console.log(`File ${`txn-log-${filename}`} does not exist.`)
+      return undefined
+    }
+    const bytes = readFileSync(`txn-log-${filename}`, 'utf-8')
+    if(bytes !== undefined) {
+      return parseInt(bytes)
+    }
+    return undefined
+  }
+
+  truncate(
+    filename: string,
+    targetSize : number,
+  ): void {
+    truncate(filename, targetSize, (err) => {
+      if (err) {
+        console.error('Error truncating the file:', err);
+      }
+    })
   }
 }
 

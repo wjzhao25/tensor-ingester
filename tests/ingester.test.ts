@@ -722,4 +722,41 @@ describe('for Standard mode', () => {
 
     })
 
+    test('standardIngester txn log', async  () => {
+        const mockConnections = new Connection("https://solana-mainnet.g.alchemy.com/v2/test")
+        const getSignaturesForAddressMock = jest.spyOn(mockConnections, 'getSignaturesForAddress')
+        
+        getSignaturesForAddressMock.mockImplementation((x) => {
+            return Promise.resolve([])
+        })
+        const mockMarketplaceAddress = new PublicKey("TSWAPaqyCSx2KABk68Shruf4rp7CxcNi8hAsbdwmHbN")
+
+        const mockWriter = new CsvWriter()
+        const mockReadNthLastSig = jest.spyOn(mockWriter, 'readNthLastSig')
+        mockReadNthLastSig.mockImplementation((x) => {
+            return "4WPCr3sJevopprjoaDpHaS6ZAPfwRuFXZhYx3M3tBJTWSCsXgeLpoN1LwwnctG7e8cP3UnhBKakV4oDcyPunwqPE"
+        })
+        const mockReadTxnLog = jest.spyOn(mockWriter, 'readTxnLog')
+        const mockTruncate = jest.spyOn(mockWriter, 'truncate')
+        
+        mockReadTxnLog.mockImplementation((x) => {
+            return 123
+        })
+
+        const filename = "test.txt"
+
+        await standardIngester(mockConnections,
+            mockMarketplaceAddress,
+            mockWriter,
+            2,
+            1,
+            filename,
+            false,
+            0,
+            true)
+          
+        expect(mockTruncate.mock.calls.length).toEqual(1)
+       
+    })
+
 })

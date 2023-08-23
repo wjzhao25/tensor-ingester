@@ -95,4 +95,40 @@ yarn ingest --m Standard --jobId 97a0b73d-edba-432b-97be-8239d1d30d71
 
 # tensor-ingester Part B
 
-Given that in part A we used pagination when requesting getSignaturesForAddress for both history and standard mode, only the pages need to be held in memory and can be disgarded after writing to file. Given the sigs no longer have to be written to file, we no longer need keep all sigs during get the gap mode in memory in order to reverse them and can directly write them to memory
+Given that we can no longer keep all sigs from the 'Get the Gap' mode in memory to reverse the order, we need to write the sigs from 'Get the Gap' mode out of order. Since our cursor pagination requires the last two sigs to be in order to traverse forward contiguously, we need to ensure that the sigs from 'Get the Gap' mode are interleaved with sigs from the real-time requests that are in order. This will allow forward traversal.
+
+To ensure that our ingestor can resume in case of failures during the 'Get the Gap' mode, we need to add checkpoints that the ingester can resume from. We will use the last successfully written sig from a real-time request as our checkpoint. Having the checkpoint, along with interleaving 'Get the Gap' sigs with real-time sigs, will ensure that 'Get the Gap' operations will be atomic. As a result, incomplete 'Get the Gap' operations can be rolled back upon restart
+
+ie. ingester failed during get the gap more, ingester resumes from previous checkpoint  
+```
+real time mode
+getSignaturesForAddress
+1 2 3 4 5
+set 5 as
+getSignaturesForAddress until 4
+12 13 14 15 16
+txn 5 not found
+switch to get the gap mode
+getSignaturesForAddress before 12
+7 8 9 10 11
+getSignaturesForAddress before 7
+ingester crashed X
+restart ingester
+rollback all sigs after checkpoint 5
+getSignaturesForAddress until 4
+17 18 19 20 21
+switch to get the gap mode
+getSignaturesForAddress before 17
+```
+
+ie. get the gap sigs wrapped between real time sigs
+```
+realtime  | get the gap  |   realtime
+1,2,3,4,5, 11,10,9,8,7,6, 12,13,14,15,16
+
+sig 5 is first checkpoint 
+sig 16 is second checkpoint
+
+```
+
+To implement the checkpoint we will use a primative transaction log that will track the total byte size of the file at given checkpoint, this will allow for the rollback operation to be performed by truncating the file at given byte size.

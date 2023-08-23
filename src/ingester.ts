@@ -226,10 +226,15 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
     let lastSig : string | undefined
     let secondLastSig : string | undefined
     if(!newJob) {
-      lastSig = writer.readNthLastSig(filename)
-      secondLastSig = writer.readNthLastSig(filename, 2)
-      if(lastSig === undefined && secondLastSig === undefined) {
+      let bytes = writer.readTxnLog(filename)
+      if(bytes === undefined) {
         newJob = true;
+      }else {
+        //roll back incomplete transactions from previous run
+        writer.truncate(filename, bytes)
+        
+        lastSig = writer.readNthLastSig(filename)
+        secondLastSig = writer.readNthLastSig(filename, 2)
       }
     }
     await realTimeSigIngester(
