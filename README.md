@@ -123,9 +123,12 @@ Result
 sigs A B C
 ```
 
-Given that we don't know what the correct sequence of sigs are, we define mistakes as responses that are incorrect is terms of 1. being out of order
-2. cursor does exist in peek ahead
-    We perform a peek ahead where we make a second request with limit + 10 to see if last sig that we use a cursor is not incorrect. If the cursor is in the peek ahead and the peek ahead is in order then we consider the cursor as correct
+Given that we don't know what the correct sequence of sigs are, we define mistakes as responses that are incorrect is terms of 
+
+1. being out of order
+2. cursor doesn't exist in peek ahead
+
+We utilize a 'peek ahead' approach to verify the accuracy of the cursor. As we lack knowledge of the sig beyond the cursor, ensuring its order is unfeasible. Therefore, employing the 'peek ahead' technique by making an identical request with a size limit incremented by 10 enables us to assess whether the cursor was in order.
 
 If a provider makes a mistake we divide their weight in half, with all weights starting at 1
 ## Configure providers
