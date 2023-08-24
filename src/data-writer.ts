@@ -7,6 +7,7 @@ export abstract class DataWriter{
     sigs: ConfirmedSignatureInfo[],
     sigWriteSize: number,
     append: boolean,
+    checkpoint: boolean,
   ): boolean
 
   abstract readNthLastSig(

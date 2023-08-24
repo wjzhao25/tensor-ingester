@@ -9,6 +9,7 @@ export class CsvWriter extends DataWriter{
     sigs: ConfirmedSignatureInfo[],
     sigWriteSize: number,
     append: boolean,
+    checkpoint: boolean,
   ) {
     console.log(`Writing ${sigs.length} sigs.`)
     while(sigs.length > 0) {
@@ -19,13 +20,15 @@ export class CsvWriter extends DataWriter{
         sigs = sigs.slice(sigWriteSize)
         append = true
     }
-    stat(filename, (err, stats) => {
-      if (err) {
-        console.error('Error getting file stats:', err)
-      } else {
-        this.writeTxnLog(filename, stats.size)
-      }
-    });
+    if(checkpoint){
+      stat(filename, (err, stats) => {
+        if (err) {
+          console.error('Error getting file stats:', err)
+        } else {
+          this.writeTxnLog(filename, stats.size)
+        }
+      });
+    }
     return append
   }
     

@@ -151,7 +151,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
         //update currentSignature
         currentSignature = sigs[sigs.length - 1].signature!
   
-        append = writer.writeToFile(filename, sigs, sigWriteSize, append) 
+        append = writer.writeToFile(filename, sigs, sigWriteSize, append, true) 
       }
       console.log(`Finished backfilling.`)
   }
@@ -203,7 +203,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
       }
       sigs = cleanSigs(sigs)
       sigs = sigs.reverse()
-      append = writer.writeToFile(filename, sigs, sigWriteSize, append)
+      append = writer.writeToFile(filename, sigs, sigWriteSize, append, false)
       //update currentSignature
       currentSignature = sigs[sigs.length - 1].signature!
     }
@@ -303,7 +303,7 @@ function checkSigsInOrdered(sigs: ConfirmedSignatureInfo[]): boolean {
         }
       }
 
-      append = writer.writeToFile(filename, sigs, sigWriteSize, append)
+      append = writer.writeToFile(filename, sigs, sigWriteSize, append, true)
       if(sigs.length > 1) {
         currentSignature = sigs[sigs.length - 2].signature!
       }
